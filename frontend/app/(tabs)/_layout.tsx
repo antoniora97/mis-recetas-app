@@ -30,6 +30,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="mercadonaProducts"
+        options={{
+          title: 'Mercadona',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="0.circle.fill.ar" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="misRecetas"
+        options={{
+          title: 'Mis recetas',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="0.circle.fill.ar" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
