@@ -1,0 +1,20 @@
+# Dependencias (NUNCA subir a GitHub)
+node_modules/
+.pnpm-store/
+
+# Expo y React Native
+.expo/
+dist/
+web-build/
+
+# NativeWind y Tailwind
+.nativewind/
+tailwind.config.js.timestamp-*
+
+# Entorno y Secretos
+.env
+.env.local
+
+# Archivos de Sistema
+.DS_Store
+Thumbs.db
