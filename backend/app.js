@@ -1,14 +1,30 @@
-import express from 'express';
-import cors from 'cors';
+import express from "express";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
+import pkg from '@prisma/client';
+import { PrismaPg } from "@prisma/adapter-pg";
+const { PrismaClient } = pkg;
+import cors from "cors";
 
-import { getMercadonaProducts } from './data-scraping/mercadona-scraping.mjs';
-import { syncCarrefour } from './data-scraping/carrefour-scraping.mjs';
+import { getMercadonaProducts } from "./data-scraping/mercadona-scraping.mjs";
+import { syncCarrefour } from "./data-scraping/carrefour-scraping.mjs";
 import { readContentFromJson } from "./utils/main.mjs";
 
+const connectionString = process.env.DATABASE_URL;
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 const app = express();
-app.use(cors())
+const upload = multer();
+app.use(cors());
 
 const PORT = 3000;
+
+cloudinary.config({
+  cloud_name: "dcus93oaf",
+  api_key: "547133458172637",
+  api_secret: "ZE4OyQQosq2L6llZBcdxj2ulvJA",
+});
 
 let MERCADONA_PRODUCTS_CATALOG = {};
 
@@ -63,9 +79,9 @@ let MERCADONA_PRODUCTS_CATALOG = {};
 // });
 
 const scrapers = {
-    mercadona: getMercadonaProducts,
-    carrefour: syncCarrefour,
-}
+  mercadona: getMercadonaProducts,
+  carrefour: syncCarrefour,
+};
 
 // app.post('api/sync/:supermarketName', (req, res) => {
 //     const { supermarketName } = req.params.toLowerCase().trim();
@@ -91,77 +107,125 @@ const scrapers = {
 //     }
 // })
 
-app.get('/api/products/:supermarketName', async (req, res) => {
-    console.log(`Petición recibida para: ${req.params.supermarketName}`); // Log de control
+app.get("/api/products/:supermarketName", async (req, res) => {
+  console.log(`Petición recibida para: ${req.params.supermarketName}`); // Log de control
 
-    try {
-        const { supermarketName } = req.params;
-        const filePath = `./data/${supermarketName}/products.json`;
+  try {
+    const { supermarketName } = req.params;
+    const filePath = `./data/${supermarketName}/products.json`;
 
-        console.log(`Intentando leer: ${filePath}`);
+    console.log(`Intentando leer: ${filePath}`);
 
-        const jsonContent = await readContentFromJson(filePath);
+    const jsonContent = await readContentFromJson(filePath);
 
-        // Si llegamos aquí, el archivo se leyó bien
-        res.json({
-            last_update: jsonContent?.last_update || null,
-            data: jsonContent?.data || []
-        });
+    // Si llegamos aquí, el archivo se leyó bien
+    res.json({
+      last_update: jsonContent?.last_update || null,
+      data: jsonContent?.data || [],
+    });
+  } catch (error) {
+    console.error("❌ ERROR DETECTADO:", error.message);
 
-    } catch (error) {
-        console.error("❌ ERROR DETECTADO:", error.message);
-
-        // Enviamos una respuesta de error para que el cliente NO se quede colgado
-        res.status(500).json({
-            error: "No se pudo leer el archivo",
-            message: error.message,
-            path: error.path
-        });
-    }
+    // Enviamos una respuesta de error para que el cliente NO se quede colgado
+    res.status(500).json({
+      error: "No se pudo leer el archivo",
+      message: error.message,
+      path: error.path,
+    });
+  }
 });
 
 app.listen(PORT, async () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 
-    const fechaHoy = new Date();
+  const fechaHoy = new Date();
 
-    // syncCarrefour();
+  // syncCarrefour();
 
-    // const exitoAlCargar = cargarDesdeDisco();
+  // const exitoAlCargar = cargarDesdeDisco();
 
-    // Obtenemos los productos en nuestro código postal
-    // const mercadonaProductsCatalog = await getMercadonaProducts('11408');
-    // const carrefourProductsCatalog = await getCarrefourProducts('11408');
+  // Obtenemos los productos en nuestro código postal
+  // const mercadonaProductsCatalog = await getMercadonaProducts('11408');
+  // const carrefourProductsCatalog = await getCarrefourProducts('11408');
 
+  // console.log("MERCADONA");
+  // console.log(mercadonaProductsCatalog);
+  // console.log("CARREFOUR");
+  // console.log(carrefourProductsCatalog);
 
-    // console.log("MERCADONA");
-    // console.log(mercadonaProductsCatalog);
-    // console.log("CARREFOUR");
-    // console.log(carrefourProductsCatalog);
+  //PRODUCTS_IN_MEMORY_ARR = productsCatalog;
+  //ULTIMA_ACTUALIZACION = new Date();
 
+  //guardarEnDisco(productsCatalog);
 
-    //PRODUCTS_IN_MEMORY_ARR = productsCatalog;
-    //ULTIMA_ACTUALIZACION = new Date();
+  // const necesitaActualizar =
+  //     !exitoAlCargar
+  //     ||
+  //     MERCADONA_PRODUCTS_CATALOG.length === 0
+  //     ||
+  //     !esMismoDia(ULTIMA_ACTUALIZACION, fechaHoy);
 
-    //guardarEnDisco(productsCatalog);
-
-    // const necesitaActualizar =
-    //     !exitoAlCargar
-    //     ||
-    //     MERCADONA_PRODUCTS_CATALOG.length === 0
-    //     ||
-    //     !esMismoDia(ULTIMA_ACTUALIZACION, fechaHoy);
-
-    // if (necesitaActualizar) {
-    //     if (!esMismoDia(ULTIMA_ACTUALIZACION, fechaHoy) && exitoAlCargar) {
-    //         console.log("📅 Los datos guardados no son de hoy. Actualizando...");
-    //     } else {
-    //         console.log("🔍 No hay datos previos. Iniciando scrap inicial...");
-    //     }
-    //     getMercadonaProducts();
-    // } else {
-    //     console.log("✅ Los datos están actualizados (corresponden a esta semana). No se requiere scrap.");
-    // }
+  // if (necesitaActualizar) {
+  //     if (!esMismoDia(ULTIMA_ACTUALIZACION, fechaHoy) && exitoAlCargar) {
+  //         console.log("📅 Los datos guardados no son de hoy. Actualizando...");
+  //     } else {
+  //         console.log("🔍 No hay datos previos. Iniciando scrap inicial...");
+  //     }
+  //     getMercadonaProducts();
+  // } else {
+  //     console.log("✅ Los datos están actualizados (corresponden a esta semana). No se requiere scrap.");
+  // }
 });
 
+app.post("/recipes", upload.single("image"), async (req, res) => {
+  try {
+    const {
+      title,
+      instructions,
+      ingredients,
+      difficulty,
+      categories,
+    } = req.body;
 
+    let imageUrl = ""; // Valor por defecto
+
+    // 1. Solo intentamos subir si el usuario envió un archivo
+    if (req.file) {
+      const uploadToCloudinary = () => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "mis_recetas" },
+            (error, result) => {
+              if (result) resolve(result);
+              else reject(error);
+            },
+          );
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+
+      const cloudRes = await uploadToCloudinary();
+      imageUrl = cloudRes.secure_url;
+    }
+
+    // 2. Guardar en Prisma (imageUrl será el link de Cloudinary o un string vacío)
+    const newRecipe = await prisma.recipe.create({
+      data: {
+        title,
+        cookingTime,
+        image: imageUrl,
+        difficulty,
+        categories: categories ? JSON.parse(categories) : [],
+        instructions: JSON.parse(instructions),
+        ingredients: {
+          create: JSON.parse(ingredients),
+        },
+      },
+    });
+
+    res.status(201).json(newRecipe);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al guardar" });
+  }
+});
